@@ -29,6 +29,9 @@ function init() {
     createStarField();
     createBlobPlanetAhead();
     
+    camera.position.set(0, 0, -20);
+    camera.lookAt(blobPlanet.position);
+    
     setTimeout(() => {
         document.getElementById('loading-screen').classList.add('hidden');
         currentPhase = 'space-travel';
@@ -78,6 +81,8 @@ function startSpaceTravel() {
     const travelDuration = 5000;
     const startTime = Date.now();
     
+    camera.lookAt(blobPlanet.position);
+    
     function travelAnimation() {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / travelDuration, 1);
@@ -91,7 +96,7 @@ function startSpaceTravel() {
         }
         starField.geometry.attributes.position.needsUpdate = true;
         
-        camera.position.z = progress * 12;
+        camera.position.z = -20 + progress * 35;
         
         console.log('Camera Z:', camera.position.z, 'Planet Z:', blobPlanet.position.z);
         
