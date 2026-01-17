@@ -1,0 +1,101 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    background: #000;
+}
+
+#three-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: opacity 1s ease;
+}
+
+#loading-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#star-loader {
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, #fff, #ffd700);
+    border-radius: 50%;
+    animation: pulse 2s infinite, rotate 3s linear infinite;
+    box-shadow: 0 0 50px #ffd700;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#overlay-text {
+    position: fixed;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-size: 20px;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 1s ease;
+    text-align: center;
+}
+
+#overlay-text.visible {
+    opacity: 1;
+}
+
+#portfolio-header {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    color: #0f0;
+    font-size: 14px;
+    z-index: 100;
+    text-align: right;
+    font-family: 'Courier New', monospace;
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
+#portfolio-header.visible {
+    opacity: 1;
+}
+
+#portfolio-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+#datetime {
+    font-size: 12px;
+}
