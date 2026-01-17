@@ -38,14 +38,34 @@ body {
 }
 
 #star-loader {
-    width: 100px;
-    height: 100px;
-    background: radial-gradient(circle, #fff, #ffd700);
-    border-radius: 50%;
-    animation: pulse 2s infinite, rotate 3s linear infinite;
-    box-shadow: 0 0 50px #ffd700;
+    width: 150px;
+    height: 150px;
+    position: relative;
+    animation: roll 2s linear infinite;
 }
 
+#star-loader::before {
+    content: "☆";
+    font-size: 150px;
+    color: #ffd700;
+    position: absolute;
+    text-shadow: 0 0 30px #ffd700, 0 0 60px #ffd700;
+}
+
+@keyframes roll {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 @keyframes pulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.2); }
