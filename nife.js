@@ -229,62 +229,66 @@ function enterThroughPlanet() {
     function moveCamera() {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
         
-        if (progress < 0.15) {
-            const circleProgress = (progress / 0.15) * Math.PI * 0.6;
+        if (progress < 0.12) {
+            const circleProgress = (progress / 0.12) * Math.PI * 0.5;
             camera.position.x = Math.sin(circleProgress) * 25;
             camera.position.y = Math.cos(circleProgress) * 12;
             camera.position.z = 80;
-            camera.lookAt(blobPlanet.position);
-        } else if (progress < 0.35) {
-            const approachProgress = (progress - 0.15) / 0.2;
-            camera.position.z = 80 + approachProgress * 20;
-            camera.lookAt(blobPlanet.position);
-            blobPlanet.scale.setScalar(1 + approachProgress * 3);
-        } else if (progress < 0.55) {
-            const throughProgress = (progress - 0.35) / 0.2;
-            camera.position.z = 100 + throughProgress * 15;
-            blobPlanet.scale.setScalar(4 + throughProgress * 6);
-            blobPlanet.material.opacity = 1 - (throughProgress * 0.7);
-            blobPlanet.material.uniforms.time.value += 0.2;
-            
-            scene.background = new THREE.Color().setHSL(
-                0.7 + throughProgress * 0.3,
-                0.8,
-                0.3 + throughProgress * 0.4
-            );
-        } else if (progress < 0.65) {
-            const exitProgress = (progress - 0.55) / 0.1;
-
-            if (exitProgress === 0 && blobPlanet) {
-                scene.remove(blobPlanet);
-                blobPlanet = null;
+            if (blobPlanet) {
+                camera.lookAt(blobPlanet.position);
             }
-            if (starField && exitProgress > 0.5) {
+        } else if (progress < 0.3) {
+            const approachProgress = (progress - 0.12) / 0.18;
+            const eased = approachProgress < 0.5 ? 2 * approachProgress * approachProgress : 1 - Math.pow(-2 * approachProgress + 2, 2) / 2;
+            camera.position.z = 80 + eased * 15;
+            if (blobPlanet) {
+                camera.lookAt(blobPlanet.position);
+                blobPlanet.scale.setScalar(1 + eased * 5);
+            }
+        } else if (progress < 0.6) {
+            const throughProgress = (progress - 0.3) / 0.3;
+            const eased = throughProgress < 0.5 ? 2 * throughProgress * throughProgress : 1 - Math.pow(-2 * throughProgress + 2, 2) / 2;
+            
+            camera.position.z = 95 + eased * 10;
+            
+            if (blobPlanet) {
+                blobPlanet.scale.setScalar(6 + eased * 15);
+                blobPlanet.material.uniforms.time.value += 0.4;
+                camera.lookAt(blobPlanet.position);
+                
+                if (eased < 0.5) {
+                    scene.background = new THREE.Color().setHSL(0.8, 0.7, 0.3 + eased * 0.4);
+                } else {
+                    const fadeOut = (eased - 0.5) / 0.5;
+                    blobPlanet.material.opacity = 1 - fadeOut;
+                    scene.background = new THREE.Color().lerpColors(
+                        new THREE.Color(0x9966ff),
+                        new THREE.Color(0xe8dcc8),
+                        fadeOut
+                    );
+                    
+                    if (fadeOut > 0.9 && blobPlanet) {
+                        scene.remove(blobPlanet);
+                        blobPlanet = null;
+                    }
+                }
+            }
+            
+            if (starField && eased > 0.7) {
                 scene.remove(starField);
                 starField = null;
             }
-            
-            scene.background = new THREE.Color().lerpColors(
-                new THREE.Color(0x9966ff),
-                new THREE.Color(0xe8dcc8),
-                exitProgress
-            );
-            
-            camera.position.z = 115 + exitProgress * 20;
-            camera.position.y = exitProgress * 40;
-            camera.lookAt(0, 0, 0);
         } else {
-            const descendProgress = (progress - 0.65) / 0.35;
+            const descendProgress = (progress - 0.6) / 0.4;
             const smoothDescend = descendProgress < 0.5 
                 ? 2 * descendProgress * descendProgress 
                 : 1 - Math.pow(-2 * descendProgress + 2, 2) / 2;
             
             scene.background = new THREE.Color(0xe8dcc8);
             
-            camera.position.y = 40 - smoothDescend * 35;
-            camera.position.z = 135 - smoothDescend * 120;
+            camera.position.y = smoothDescend * 40;
+            camera.position.z = 105 + smoothDescend * 35;
             camera.lookAt(0, 3, 0);
             
             if (descendProgress > 0.3 && !scene.getObjectByName('room-created')) {
@@ -362,6 +366,7 @@ function finalizeRoom() {
     updateDateTime();
     setInterval(updateDateTime, 1000);
 }
+
 function createCouch() {
     const couchGroup = new THREE.Group();
     
@@ -477,9 +482,9 @@ function animate() {
     requestAnimationFrame(animate);
     
     if (blobPlanet && currentPhase === 'space-travel') {
-    blobPlanet.material.uniforms.time.value += 0.05;
-    blobPlanet.rotation.y += 0.003;
-}
+        blobPlanet.material.uniforms.time.value += 0.05;
+        blobPlanet.rotation.y += 0.003;
+    }
     
     if (controls.enabled) {
         controls.update();
