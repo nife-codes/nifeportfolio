@@ -116,7 +116,7 @@ function showCountdown() {
 }
 
 function createBlobPlanetAhead() {
-    const geometry = new THREE.IcosahedronGeometry(8, 7);
+    const geometry = new THREE.IcosahedronGeometry(8, 5);
     
     const vertexShader = `
         varying vec2 vUv;
@@ -130,15 +130,14 @@ function createBlobPlanetAhead() {
             vPosition = position;
             
             vec3 pos = position;
-            vec3 normalizedPos = normalize(pos);
             
-            float wave1 = sin(normalizedPos.x * 3.0 + time * 0.8) * 0.3;
-            float wave2 = sin(normalizedPos.y * 3.0 + time * 1.0) * 0.3;
-            float wave3 = sin(normalizedPos.z * 3.0 + time * 0.7) * 0.3;
-            float wave4 = cos(length(normalizedPos.xy) * 2.0 + time * 0.9) * 0.2;
+            float wave1 = sin(pos.x * 2.0 + time * 0.6) * 0.4;
+            float wave2 = cos(pos.y * 2.2 + time * 0.8) * 0.4;
+            float wave3 = sin(pos.z * 1.8 + time * 0.7) * 0.4;
+            float wave4 = sin(length(pos) * 1.5 + time * 0.5) * 0.3;
             
-            float displacement = (wave1 + wave2 + wave3 + wave4) * 0.5;
-            pos += normal * displacement;
+            float totalWave = (wave1 + wave2 + wave3 + wave4) * 0.3;
+            pos += normal * totalWave;
             
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
@@ -159,15 +158,13 @@ function createBlobPlanetAhead() {
             float noise1 = sin(vPosition.x * 1.5 + time * 0.5) * 0.5 + 0.5;
             float noise2 = sin(vPosition.y * 1.2 + time * 0.7) * 0.5 + 0.5;
             float noise3 = sin(vPosition.z * 1.3 + time * 0.6) * 0.5 + 0.5;
-            float noise4 = sin(length(vPosition.xy) * 0.8 + time * 0.4) * 0.5 + 0.5;
             
             vec3 color = mix(pinkTone, blueTone, noise1);
             color = mix(color, purpleTone, noise2 * 0.8);
             color = mix(color, peachTone, noise3 * 0.6);
-            color = mix(color, vec3(0.9, 0.8, 0.95), noise4 * 0.4);
             
             float fresnel = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0);
-            color += fresnel * vec3(0.4, 0.5, 0.6);
+            color += fresnel * vec3(0.5, 0.6, 0.7);
             
             gl_FragColor = vec4(color, 0.95);
         }
