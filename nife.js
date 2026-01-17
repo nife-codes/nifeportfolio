@@ -116,7 +116,7 @@ function showCountdown() {
 }
 
 function createBlobPlanetAhead() {
-    const geometry = new THREE.IcosahedronGeometry(8, 5);
+    const geometry = new THREE.IcosahedronGeometry(8, 4);
     
     const vertexShader = `
         varying vec2 vUv;
@@ -131,12 +131,13 @@ function createBlobPlanetAhead() {
             
             vec3 pos = position;
             
-            float wave1 = sin(pos.x * 2.0 + time * 0.6) * 0.4;
-            float wave2 = cos(pos.y * 2.2 + time * 0.8) * 0.4;
-            float wave3 = sin(pos.z * 1.8 + time * 0.7) * 0.4;
-            float wave4 = sin(length(pos) * 1.5 + time * 0.5) * 0.3;
+            float wave1 = sin(pos.x * 1.5 + time * 2.0) * 0.6;
+            float wave2 = cos(pos.y * 1.8 + time * 2.5) * 0.6;
+            float wave3 = sin(pos.z * 1.3 + time * 2.2) * 0.6;
+            float wave4 = sin(length(pos.xy) * 1.2 + time * 1.8) * 0.5;
+            float wave5 = cos(length(pos.yz) * 1.4 + time * 2.3) * 0.5;
             
-            float totalWave = (wave1 + wave2 + wave3 + wave4) * 0.3;
+            float totalWave = (wave1 + wave2 + wave3 + wave4 + wave5) * 0.25;
             pos += normal * totalWave;
             
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
