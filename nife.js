@@ -77,7 +77,8 @@ function startSpaceTravel() {
         }
         starField.geometry.attributes.position.needsUpdate = true;
         
-        camera.position.z = progress * 25;
+        camera.position.z = progress * -150;
+blobPlanet.position.z = -200 + (progress * 220);
         
         if (progress < 1) {
             requestAnimationFrame(travelAnimation);
@@ -152,7 +153,7 @@ function createBlobPlanetAhead() {
     });
     
     blobPlanet = new THREE.Mesh(geometry, material);
-    blobPlanet.position.z = 30;
+    blobPlanet.position.z = -200;
     scene.add(blobPlanet);
 }
 
