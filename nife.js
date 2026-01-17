@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let scene, camera, renderer, controls;
 let blobPlanet;
-let stars = [];
+let starField;
 let isLoading = true;
 let currentPhase = 'loading';
 
@@ -14,7 +14,7 @@ function init() {
     scene = new THREE.Scene();
     
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 50;
+    camera.position.set(0, 0, 0);
     
     renderer = new THREE.WebGLRenderer({ 
         canvas: document.getElementById('three-canvas'),
@@ -41,63 +41,73 @@ function createStarField() {
     const starGeometry = new THREE.BufferGeometry();
     const starMaterial = new THREE.PointsMaterial({ 
         color: 0xffffff, 
-        size: 0.7,
+        size: 1.5,
         transparent: true
     });
     
     const starVertices = [];
-    for (let i = 0; i < 10000; i++) {
+    for (let i = 0; i < 15000; i++) {
         const x = (Math.random() - 0.5) * 2000;
         const y = (Math.random() - 0.5) * 2000;
-        const z = (Math.random() - 0.5) * 2000;
+        const z = Math.random() * -2000;
         starVertices.push(x, y, z);
     }
     
     starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-    const starField = new THREE.Points(starGeometry, starMaterial);
+    starField = new THREE.Points(starGeometry, starMaterial);
     scene.add(starField);
-    stars.push(starField);
 }
 
 function startSpaceTravel() {
-    const travelDuration = 3000;
+    createBlobPlanetAhead();
+    
+    const travelDuration = 4000;
     const startTime = Date.now();
     
     function travelAnimation() {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / travelDuration, 1);
         
-        stars.forEach(star => {
-            star.position.z = progress * 100;
-        });
+        const positions = starField.geometry.attributes.position.array;
+        for (let i = 0; i < positions.length; i += 3) {
+            positions[i + 2] += 8;
+            if (positions[i + 2] > 100) {
+                positions[i + 2] = -2000;
+            }
+        }
+        starField.geometry.attributes.position.needsUpdate = true;
+        
+        camera.position.z = progress * 25;
         
         if (progress < 1) {
             requestAnimationFrame(travelAnimation);
         } else {
             currentPhase = 'blob-planet';
-            createBlobPlanet();
+            arrivedAtPlanet();
         }
     }
     
     travelAnimation();
 }
 
-function createBlobPlanet() {
-    const geometry = new THREE.IcosahedronGeometry(10, 4);
+function createBlobPlanetAhead() {
+    const geometry = new THREE.IcosahedronGeometry(8, 5);
     
     const vertexShader = `
         varying vec2 vUv;
         varying vec3 vNormal;
+        varying vec3 vPosition;
         uniform float time;
         
         void main() {
             vUv = uv;
-            vNormal = normal;
+            vNormal = normalize(normalMatrix * normal);
+            vPosition = position;
             
             vec3 pos = position;
-            float wave = sin(pos.x * 0.5 + time) * 0.3;
-            wave += sin(pos.y * 0.7 + time * 1.2) * 0.3;
-            wave += sin(pos.z * 0.6 + time * 0.8) * 0.3;
+            float wave = sin(pos.x * 0.8 + time * 0.5) * 0.4;
+            wave += sin(pos.y * 1.0 + time * 0.7) * 0.4;
+            wave += sin(pos.z * 0.9 + time * 0.6) * 0.4;
             
             pos += normal * wave;
             
@@ -108,21 +118,27 @@ function createBlobPlanet() {
     const fragmentShader = `
         varying vec2 vUv;
         varying vec3 vNormal;
+        varying vec3 vPosition;
         uniform float time;
         
         void main() {
-            vec3 color1 = vec3(0.8, 0.4, 0.6);
-            vec3 color2 = vec3(0.4, 0.6, 0.9);
-            vec3 color3 = vec3(0.6, 0.3, 0.8);
+            vec3 pinkTone = vec3(0.95, 0.6, 0.7);
+            vec3 blueTone = vec3(0.5, 0.7, 0.95);
+            vec3 purpleTone = vec3(0.75, 0.55, 0.85);
+            vec3 peachTone = vec3(0.98, 0.75, 0.65);
             
-            float mixer = sin(vUv.x * 3.0 + time) * 0.5 + 0.5;
-            vec3 color = mix(color1, color2, mixer);
-            color = mix(color, color3, vUv.y);
+            float noise1 = sin(vPosition.x * 2.0 + time * 0.3) * 0.5 + 0.5;
+            float noise2 = sin(vPosition.y * 1.5 + time * 0.5) * 0.5 + 0.5;
+            float noise3 = sin(vPosition.z * 1.8 + time * 0.4) * 0.5 + 0.5;
             
-            float fresnel = pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
-            color += fresnel * 0.3;
+            vec3 color = mix(pinkTone, blueTone, noise1);
+            color = mix(color, purpleTone, noise2 * 0.7);
+            color = mix(color, peachTone, noise3 * 0.5);
             
-            gl_FragColor = vec4(color, 1.0);
+            float fresnel = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.5);
+            color += fresnel * vec3(0.3, 0.4, 0.5);
+            
+            gl_FragColor = vec4(color, 0.95);
         }
     `;
     
@@ -131,19 +147,19 @@ function createBlobPlanet() {
         fragmentShader,
         uniforms: {
             time: { value: 0 }
-        }
+        },
+        transparent: true
     });
     
     blobPlanet = new THREE.Mesh(geometry, material);
+    blobPlanet.position.z = 30;
     scene.add(blobPlanet);
-    
-    camera.position.set(0, 0, 30);
-    
-    stars.forEach(star => star.visible = false);
-    
+}
+
+function arrivedAtPlanet() {
     setTimeout(() => {
         showClickPrompt();
-    }, 1000);
+    }, 500);
 }
 
 function showClickPrompt() {
@@ -168,26 +184,44 @@ function onClickToEnter() {
     document.getElementById('overlay-text').classList.remove('visible');
     
     currentPhase = 'entering-room';
-    enterRoom();
+    enterThroughPlanet();
 }
 
-function enterRoom() {
-    const duration = 2000;
+function enterThroughPlanet() {
+    const duration = 3000;
     const startTime = Date.now();
-    const startPos = camera.position.clone();
-    const targetPos = new THREE.Vector3(0, 5, 20);
+    const startCamPos = camera.position.clone();
     
     function moveCamera() {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
+        const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
         
-        camera.position.lerpVectors(startPos, targetPos, eased);
+        if (progress < 0.3) {
+            const angle = eased * Math.PI * 0.5;
+            camera.position.x = Math.sin(angle) * 15;
+            camera.position.y = Math.cos(angle) * 5;
+            camera.lookAt(blobPlanet.position);
+        } else if (progress < 0.6) {
+            const throughProgress = (progress - 0.3) / 0.3;
+            camera.position.z = 30 + throughProgress * 15;
+            blobPlanet.material.uniforms.time.value += 0.1;
+            blobPlanet.scale.setScalar(1 + throughProgress * 2);
+            blobPlanet.material.opacity = 1 - throughProgress;
+        } else {
+            if (blobPlanet) {
+                scene.remove(blobPlanet);
+                blobPlanet = null;
+            }
+            if (starField) {
+                scene.remove(starField);
+                starField = null;
+            }
+        }
         
         if (progress < 1) {
             requestAnimationFrame(moveCamera);
         } else {
-            if (blobPlanet) scene.remove(blobPlanet);
             currentPhase = 'room';
             createRoom();
         }
@@ -197,59 +231,107 @@ function enterRoom() {
 }
 
 function createRoom() {
-    scene.background = new THREE.Color(0xf5f5f5);
+    scene.background = new THREE.Color(0xe8dcc8);
     
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    camera.position.set(0, 5, 15);
+    camera.lookAt(0, 3, 0);
+    
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
     
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 10, 5);
+    const directionalLight = new THREE.DirectionalLight(0xfff5e6, 0.6);
+    directionalLight.position.set(8, 15, 10);
     scene.add(directionalLight);
     
-    const floorGeometry = new THREE.PlaneGeometry(50, 50);
-    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xd4c5b9 });
+    const pointLight = new THREE.PointLight(0xffd700, 0.4, 20);
+    pointLight.position.set(-5, 5, 5);
+    scene.add(pointLight);
+    
+    const floorGeometry = new THREE.PlaneGeometry(40, 40);
+    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xc9b896 });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -2;
+    floor.position.y = 0;
     scene.add(floor);
     
-    const wallGeometry = new THREE.PlaneGeometry(50, 20);
-    const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xf0ead6 });
+    const wallGeometry = new THREE.PlaneGeometry(40, 15);
+    const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xf5f0e8 });
+    
     const backWall = new THREE.Mesh(wallGeometry, wallMaterial);
-    backWall.position.z = -15;
-    backWall.position.y = 8;
+    backWall.position.set(0, 7.5, -10);
     scene.add(backWall);
     
+    const leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
+    leftWall.position.set(-20, 7.5, 10);
+    leftWall.rotation.y = Math.PI / 2;
+    scene.add(leftWall);
+    
+    const rightWall = new THREE.Mesh(wallGeometry, wallMaterial);
+    rightWall.position.set(20, 7.5, 10);
+    rightWall.rotation.y = -Math.PI / 2;
+    scene.add(rightWall);
+    
+    createCouch();
     createDesk();
     
     controls.enabled = true;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.minDistance = 10;
-    controls.maxDistance = 40;
+    controls.minDistance = 8;
+    controls.maxDistance = 30;
+    controls.target.set(0, 3, 0);
     
     document.getElementById('portfolio-header').classList.add('visible');
     updateDateTime();
     setInterval(updateDateTime, 1000);
 }
 
+function createCouch() {
+    const couchGroup = new THREE.Group();
+    
+    const seatGeometry = new THREE.BoxGeometry(4, 0.8, 2);
+    const backGeometry = new THREE.BoxGeometry(4, 2, 0.4);
+    const armGeometry = new THREE.BoxGeometry(0.4, 1.5, 2);
+    const couchMaterial = new THREE.MeshStandardMaterial({ color: 0x8b7d6b });
+    
+    const seat = new THREE.Mesh(seatGeometry, couchMaterial);
+    seat.position.y = 0.8;
+    couchGroup.add(seat);
+    
+    const back = new THREE.Mesh(backGeometry, couchMaterial);
+    back.position.set(0, 1.8, -0.8);
+    couchGroup.add(back);
+    
+    const leftArm = new THREE.Mesh(armGeometry, couchMaterial);
+    leftArm.position.set(-1.8, 1.2, 0);
+    couchGroup.add(leftArm);
+    
+    const rightArm = new THREE.Mesh(armGeometry, couchMaterial);
+    rightArm.position.set(1.8, 1.2, 0);
+    couchGroup.add(rightArm);
+    
+    couchGroup.position.set(-8, 0, 5);
+    couchGroup.rotation.y = Math.PI / 6;
+    scene.add(couchGroup);
+}
+
 function createDesk() {
     const deskGroup = new THREE.Group();
     
-    const deskGeometry = new THREE.BoxGeometry(8, 0.2, 4);
+    const deskGeometry = new THREE.BoxGeometry(7, 0.15, 3.5);
     const deskMaterial = new THREE.MeshStandardMaterial({ color: 0xf5f5dc });
     const desk = new THREE.Mesh(deskGeometry, deskMaterial);
-    desk.position.y = 0;
+    desk.position.y = 2;
     deskGroup.add(desk);
     
-    const legGeometry = new THREE.BoxGeometry(0.2, 3, 0.2);
+    const legGeometry = new THREE.BoxGeometry(0.15, 2, 0.15);
     const legMaterial = new THREE.MeshStandardMaterial({ color: 0xe5e5cc });
     
     const positions = [
-        [-3.5, -1.5, 1.5],
-        [3.5, -1.5, 1.5],
-        [-3.5, -1.5, -1.5],
-        [3.5, -1.5, -1.5]
+        [-3.2, 1, 1.5],
+        [3.2, 1, 1.5],
+        [-3.2, 1, -1.5],
+        [3.2, 1, -1.5]
     ];
     
     positions.forEach(pos => {
@@ -258,30 +340,42 @@ function createDesk() {
         deskGroup.add(leg);
     });
     
-    const laptopBase = new THREE.BoxGeometry(2, 0.1, 1.5);
-    const laptopScreen = new THREE.BoxGeometry(2, 1.2, 0.1);
-    const laptopMaterial = new THREE.MeshStandardMaterial({ color: 0xc0c0c0 });
+    const laptopBase = new THREE.BoxGeometry(1.8, 0.08, 1.3);
+    const laptopScreen = new THREE.BoxGeometry(1.8, 1.1, 0.08);
+    const laptopMaterial = new THREE.MeshStandardMaterial({ color: 0xd3d3d3 });
     
     const base = new THREE.Mesh(laptopBase, laptopMaterial);
-    base.position.set(0, 0.2, 0);
+    base.position.set(0, 2.12, 0);
     deskGroup.add(base);
     
     const screen = new THREE.Mesh(laptopScreen, laptopMaterial);
-    screen.position.set(0, 0.8, -0.7);
-    screen.rotation.x = -0.2;
+    screen.position.set(0, 2.7, -0.6);
+    screen.rotation.x = -0.3;
     deskGroup.add(screen);
     
-    const monsteraGeometry = new THREE.ConeGeometry(0.5, 1.5, 8);
+    const monsteraGeometry = new THREE.ConeGeometry(0.4, 1.2, 8);
     const monsteraMaterial = new THREE.MeshStandardMaterial({ color: 0x2d5016 });
     const plant = new THREE.Mesh(monsteraGeometry, monsteraMaterial);
-    plant.position.set(-3, 1, 0);
+    plant.position.set(-2.8, 2.7, 0);
     deskGroup.add(plant);
     
-    const mugGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.4, 16);
+    const mugGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.35, 16);
     const mugMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
     const mug = new THREE.Mesh(mugGeometry, mugMaterial);
-    mug.position.set(2.5, 0.3, 0.5);
+    mug.position.set(2.2, 2.3, 0.4);
     deskGroup.add(mug);
+    
+    const lampPoleGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1.5, 8);
+    const lampShadeGeometry = new THREE.ConeGeometry(0.3, 0.4, 8);
+    const lampMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700 });
+    
+    const lampPole = new THREE.Mesh(lampPoleGeometry, lampMaterial);
+    lampPole.position.set(-2, 2.85, 0.8);
+    deskGroup.add(lampPole);
+    
+    const lampShade = new THREE.Mesh(lampShadeGeometry, lampMaterial);
+    lampShade.position.set(-2, 3.6, 0.8);
+    deskGroup.add(lampShade);
     
     scene.add(deskGroup);
 }
@@ -306,9 +400,9 @@ function updateDateTime() {
 function animate() {
     requestAnimationFrame(animate);
     
-    if (blobPlanet) {
-        blobPlanet.material.uniforms.time.value += 0.01;
-        blobPlanet.rotation.y += 0.002;
+    if (blobPlanet && currentPhase !== 'entering-room') {
+        blobPlanet.material.uniforms.time.value += 0.015;
+        blobPlanet.rotation.y += 0.003;
     }
     
     if (controls.enabled) {
