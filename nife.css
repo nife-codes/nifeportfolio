@@ -48,8 +48,8 @@ body {
 #star-loader::before {
     content: "☆";
     font-size: 150px;
-    color: #ffd700;
-    text-shadow: 0 0 30px #ffd700, 0 0 60px #ffd700;
+    color: #fffef7;
+    text-shadow: 0 0 30px #faf9f2, 0 0 60px #b4cae4;
     animation: spin-star 2s linear infinite;
 }
 

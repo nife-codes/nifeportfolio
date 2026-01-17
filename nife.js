@@ -77,14 +77,7 @@ function startSpaceTravel() {
         }
         starField.geometry.attributes.position.needsUpdate = true;
         
-        const startZ = 0;
-        const endZ = 22;
-        camera.position.z = startZ + (progress * (endZ - startZ));
-        
-        const startScale = 0.3;
-        const endScale = 1;
-        const scale = startScale + (progress * (endScale - startScale));
-        blobPlanet.scale.setScalar(scale);
+        camera.position.z = progress * 80;
         
         if (progress < 1) {
             requestAnimationFrame(travelAnimation);
@@ -159,8 +152,8 @@ function createBlobPlanetAhead() {
     });
     
     blobPlanet = new THREE.Mesh(geometry, material);
-    blobPlanet.position.z = 25;
-    blobPlanet.scale.setScalar(0.3);
+    blobPlanet.position.z = 100;
+    blobPlanet.scale.setScalar(1);
     scene.add(blobPlanet);
 }
 
