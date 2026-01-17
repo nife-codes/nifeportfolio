@@ -60,6 +60,7 @@ function createStarField() {
 
 function startSpaceTravel() {
     createBlobPlanetAhead();
+    showCountdown();
     
     const travelDuration = 5000;
     const startTime = Date.now();
@@ -91,8 +92,31 @@ function startSpaceTravel() {
     travelAnimation();
 }
 
+function showCountdown() {
+    const overlayText = document.getElementById('overlay-text');
+    overlayText.style.bottom = '10%';
+    overlayText.style.top = 'auto';
+    overlayText.style.right = '20px';
+    overlayText.style.left = 'auto';
+    overlayText.style.transform = 'none';
+    overlayText.classList.add('visible');
+    
+    let count = 3;
+    overlayText.textContent = `Arriving at Planet Nife in ${count}...`;
+    
+    const countInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            overlayText.textContent = `Arriving at Planet Nife in ${count}...`;
+        } else {
+            clearInterval(countInterval);
+            overlayText.classList.remove('visible');
+        }
+    }, 1500);
+}
+
 function createBlobPlanetAhead() {
-    const geometry = new THREE.IcosahedronGeometry(8, 4);
+    const geometry = new THREE.IcosahedronGeometry(8, 7);
     
     const vertexShader = `
         varying vec2 vUv;
@@ -106,11 +130,15 @@ function createBlobPlanetAhead() {
             vPosition = position;
             
             vec3 pos = position;
-            float wave = sin(pos.x * 0.8 + time * 0.5) * 0.5;
-            wave += sin(pos.y * 1.0 + time * 0.7) * 0.5;
-            wave += sin(pos.z * 0.9 + time * 0.6) * 0.5;
+            vec3 normalizedPos = normalize(pos);
             
-            pos += normal * wave;
+            float wave1 = sin(normalizedPos.x * 3.0 + time * 0.8) * 0.3;
+            float wave2 = sin(normalizedPos.y * 3.0 + time * 1.0) * 0.3;
+            float wave3 = sin(normalizedPos.z * 3.0 + time * 0.7) * 0.3;
+            float wave4 = cos(length(normalizedPos.xy) * 2.0 + time * 0.9) * 0.2;
+            
+            float displacement = (wave1 + wave2 + wave3 + wave4) * 0.5;
+            pos += normal * displacement;
             
             gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
@@ -128,16 +156,18 @@ function createBlobPlanetAhead() {
             vec3 purpleTone = vec3(0.75, 0.55, 0.85);
             vec3 peachTone = vec3(0.98, 0.75, 0.65);
             
-            float noise1 = sin(vPosition.x * 2.0 + time * 0.3) * 0.5 + 0.5;
-            float noise2 = sin(vPosition.y * 1.5 + time * 0.5) * 0.5 + 0.5;
-            float noise3 = sin(vPosition.z * 1.8 + time * 0.4) * 0.5 + 0.5;
+            float noise1 = sin(vPosition.x * 1.5 + time * 0.5) * 0.5 + 0.5;
+            float noise2 = sin(vPosition.y * 1.2 + time * 0.7) * 0.5 + 0.5;
+            float noise3 = sin(vPosition.z * 1.3 + time * 0.6) * 0.5 + 0.5;
+            float noise4 = sin(length(vPosition.xy) * 0.8 + time * 0.4) * 0.5 + 0.5;
             
             vec3 color = mix(pinkTone, blueTone, noise1);
-            color = mix(color, purpleTone, noise2 * 0.7);
-            color = mix(color, peachTone, noise3 * 0.5);
+            color = mix(color, purpleTone, noise2 * 0.8);
+            color = mix(color, peachTone, noise3 * 0.6);
+            color = mix(color, vec3(0.9, 0.8, 0.95), noise4 * 0.4);
             
-            float fresnel = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.5);
-            color += fresnel * vec3(0.3, 0.4, 0.5);
+            float fresnel = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0);
+            color += fresnel * vec3(0.4, 0.5, 0.6);
             
             gl_FragColor = vec4(color, 0.95);
         }
@@ -165,6 +195,12 @@ function arrivedAtPlanet() {
 
 function showClickPrompt() {
     const overlayText = document.getElementById('overlay-text');
+    overlayText.style.bottom = '15%';
+    overlayText.style.top = 'auto';
+    overlayText.style.left = '50%';
+    overlayText.style.right = 'auto';
+    overlayText.style.transform = 'translateX(-50%)';
+    
     const text = 'click anywhere to start';
     let index = 0;
     
@@ -189,7 +225,7 @@ function onClickToEnter() {
 }
 
 function enterThroughPlanet() {
-    const duration = 3000;
+    const duration = 4000;
     const startTime = Date.now();
     
     function moveCamera() {
@@ -197,26 +233,37 @@ function enterThroughPlanet() {
         const progress = Math.min(elapsed / duration, 1);
         const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
         
-        if (progress < 0.3) {
-            const angle = eased * Math.PI * 0.5;
-            camera.position.x = Math.sin(angle) * 15;
-            camera.position.y = Math.cos(angle) * 5;
+        if (progress < 0.2) {
+            const circleProgress = eased * Math.PI;
+            camera.position.x = Math.sin(circleProgress) * 20;
+            camera.position.y = Math.cos(circleProgress) * 10;
             camera.position.z = 80;
             camera.lookAt(blobPlanet.position);
-        } else if (progress < 0.6) {
-            const throughProgress = (progress - 0.3) / 0.3;
+        } else if (progress < 0.5) {
+            const throughProgress = (progress - 0.2) / 0.3;
             camera.position.z = 80 + throughProgress * 30;
-            blobPlanet.scale.setScalar(1 + throughProgress * 3);
-            blobPlanet.material.opacity = 1 - throughProgress;
+            camera.position.y = 10 - throughProgress * 10;
+            blobPlanet.scale.setScalar(1 + throughProgress * 4);
+            blobPlanet.material.uniforms.time.value += 0.15;
+        } else if (progress < 0.7) {
+            const insideProgress = (progress - 0.5) / 0.2;
+            camera.position.z = 110 + insideProgress * 20;
+            camera.position.y = insideProgress * 30;
+            blobPlanet.material.opacity = 1 - insideProgress;
+            
+            if (insideProgress > 0.5 && starField) {
+                scene.remove(starField);
+                starField = null;
+            }
         } else {
             if (blobPlanet) {
                 scene.remove(blobPlanet);
                 blobPlanet = null;
             }
-            if (starField) {
-                scene.remove(starField);
-                starField = null;
-            }
+            const descendProgress = (progress - 0.7) / 0.3;
+            camera.position.y = 30 - descendProgress * 25;
+            camera.position.z = 130 - descendProgress * 115;
+            camera.lookAt(0, 3, 0);
         }
         
         if (progress < 1) {
