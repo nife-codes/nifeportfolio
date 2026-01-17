@@ -61,7 +61,7 @@ function createStarField() {
 function startSpaceTravel() {
     createBlobPlanetAhead();
     
-    const travelDuration = 4000;
+    const travelDuration = 5000;
     const startTime = Date.now();
     
     function travelAnimation() {
@@ -77,8 +77,14 @@ function startSpaceTravel() {
         }
         starField.geometry.attributes.position.needsUpdate = true;
         
-        camera.position.z = progress * -150;
-blobPlanet.position.z = -200 + (progress * 220);
+        const startZ = 0;
+        const endZ = 22;
+        camera.position.z = startZ + (progress * (endZ - startZ));
+        
+        const startScale = 0.3;
+        const endScale = 1;
+        const scale = startScale + (progress * (endScale - startScale));
+        blobPlanet.scale.setScalar(scale);
         
         if (progress < 1) {
             requestAnimationFrame(travelAnimation);
@@ -153,7 +159,8 @@ function createBlobPlanetAhead() {
     });
     
     blobPlanet = new THREE.Mesh(geometry, material);
-    blobPlanet.position.z = -200;
+    blobPlanet.position.z = 25;
+    blobPlanet.scale.setScalar(0.3);
     scene.add(blobPlanet);
 }
 
@@ -205,7 +212,7 @@ function enterThroughPlanet() {
             camera.lookAt(blobPlanet.position);
         } else if (progress < 0.6) {
             const throughProgress = (progress - 0.3) / 0.3;
-            camera.position.z = 30 + throughProgress * 15;
+            camera.position.z = 22 + throughProgress * 15;
             blobPlanet.material.uniforms.time.value += 0.1;
             blobPlanet.scale.setScalar(1 + throughProgress * 2);
             blobPlanet.material.opacity = 1 - throughProgress;
@@ -403,7 +410,6 @@ function animate() {
     
     if (blobPlanet && currentPhase !== 'entering-room') {
         blobPlanet.material.uniforms.time.value += 0.015;
-        blobPlanet.rotation.y += 0.003;
     }
     
     if (controls.enabled) {
