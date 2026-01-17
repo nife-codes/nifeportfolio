@@ -77,7 +77,7 @@ function startSpaceTravel() {
         }
         starField.geometry.attributes.position.needsUpdate = true;
         
-        camera.position.z = progress * 80;
+        camera.position.z = progress * 25;
         
         if (progress < 1) {
             requestAnimationFrame(travelAnimation);
@@ -152,8 +152,8 @@ function createBlobPlanetAhead() {
     });
     
     blobPlanet = new THREE.Mesh(geometry, material);
-    blobPlanet.position.z = 100;
-    blobPlanet.scale.setScalar(1);
+    blobPlanet.position.set(0, 0, 30);
+    blobPlanet.scale.setScalar(3);
     scene.add(blobPlanet);
 }
 
@@ -191,7 +191,6 @@ function onClickToEnter() {
 function enterThroughPlanet() {
     const duration = 3000;
     const startTime = Date.now();
-    const startCamPos = camera.position.clone();
     
     function moveCamera() {
         const elapsed = Date.now() - startTime;
@@ -202,12 +201,13 @@ function enterThroughPlanet() {
             const angle = eased * Math.PI * 0.5;
             camera.position.x = Math.sin(angle) * 15;
             camera.position.y = Math.cos(angle) * 5;
+            camera.position.z = 25;
             camera.lookAt(blobPlanet.position);
         } else if (progress < 0.6) {
             const throughProgress = (progress - 0.3) / 0.3;
-            camera.position.z = 22 + throughProgress * 15;
+            camera.position.z = 25 + throughProgress * 20;
             blobPlanet.material.uniforms.time.value += 0.1;
-            blobPlanet.scale.setScalar(1 + throughProgress * 2);
+            blobPlanet.scale.setScalar(3 + throughProgress * 3);
             blobPlanet.material.opacity = 1 - throughProgress;
         } else {
             if (blobPlanet) {
