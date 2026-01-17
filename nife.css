@@ -47,31 +47,12 @@ body {
 #star-loader::before {
     content: "☆";
     font-size: 150px;
-    color: #ffd700;
+    color: #ebeae3;
     position: absolute;
-    text-shadow: 0 0 30px #ffd700, 0 0 60px #ffd700;
+    text-shadow: 0 0 30px #e7e6e2, 0 0 60px #e6e5e1;
 }
 
 @keyframes roll {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-}
-
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-}
-
-@keyframes rotate {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
